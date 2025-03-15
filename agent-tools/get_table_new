@@ -11,7 +11,7 @@ Dataset_id: 'xxx'
 Table_id: 'sales'
 
 
-## JSON
+## JSON (update endpoint url from cloudrun)
 
 {
   "openapi": "3.0.2",
