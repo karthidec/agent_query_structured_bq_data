@@ -1,0 +1,60 @@
+## main.py
+
+from flask import Flask, request, make_response, jsonify
+import json
+from google.cloud import bigquery
+
+app = Flask(__name__)
+
+def schemafield_to_dict(schema):
+    """Converts a list of SchemaField objects to a list of dicts."""
+    return [
+        {
+            'name': field.name,
+            'field_type': field.field_type,
+            'mode': field.mode,
+            'description': field.description,
+            'fields': schemafield_to_dict(field.fields) if field.fields else []
+        }
+        for field in schema
+    ]
+
+@app.route('/get_table_new', methods=['GET'])
+def get_table_new(request):
+    # Parse JSON payload from the request body
+    print(f'Request: {request}')
+    try:
+        table_id = request.args.get('table_id')
+    except Exception as e:
+        print(f'Error {e}')
+        return make_response(jsonify({"error": "Invalid JSON payload"}), 400)
+
+    # Validate required parameters
+    if not table_id:
+        return make_response(jsonify({"error": "Missing table_id parameter"}), 400)
+    
+    print(f'Table id: {table_id}')
+    
+    # Initialize BigQuery client
+    client = bigquery.Client()
+
+    # Attempt to retrieve the table reference
+    try:
+        table_ref = client.get_table(table_id)
+    except Exception as e:
+        return make_response(jsonify({"error": str(e)}), 404)
+
+    api_response = {
+        "description": table_ref.description,
+        "schema": schemafield_to_dict(table_ref.schema),
+        "num_rows": table_ref.num_rows,
+    }
+    
+    return jsonify(api_response)
+
+
+## requirements.txt
+
+functions-framework==3.*
+Flask
+google-cloud-bigquery
