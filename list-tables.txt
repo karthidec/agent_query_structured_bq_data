@@ -1,0 +1,30 @@
+## main.py
+
+from flask import Flask, request, make_response, jsonify
+import json
+from google.cloud import bigquery
+
+app = Flask(__name__)
+
+@app.route('/list_tables_new', methods=['GET'])
+def list_tables_new(request):
+    dataset_id = request.args.get('dataset_id')
+    if not dataset_id:
+        return make_response(json.dumps({"error": "Missing dataset_id parameter"}), 400)
+    client = bigquery.Client()
+    dataset_ref = client.dataset(dataset_id)
+    api_response = client.list_tables(dataset_ref)
+    table_ids = str([table.table_id for table in api_response])
+    
+    output = {
+        "tables": table_ids
+    }
+    return jsonify(output)
+
+
+## requirements.txt
+
+functions-framework==3.*
+Flask
+google-cloud-bigquery
+
