@@ -1,0 +1,42 @@
+## main.py
+
+from flask import Flask, request, make_response, jsonify
+import json
+from google.cloud import bigquery
+
+app = Flask(__name__)
+
+@app.route('/sql_query_new', methods=['GET', 'POST'])
+def sql_query_new(request):
+    data = request.get_json()
+    print(data)
+    if not data or 'query' not in data:
+        return jsonify({"error": "Missing query parameter"}), 400
+    query = data['query']
+
+    client = bigquery.Client()
+    job_config = bigquery.QueryJobConfig(
+        maximum_bytes_billed=100000000
+    ) 
+    try:
+        cleaned_query = (
+            query
+            .replace("\\n", " ")
+            .replace("\n", "")
+            .replace("\\", "")
+        )
+        query_job = client.query(cleaned_query, job_config=job_config)
+        api_response = query_job.result()
+        api_response = str([dict(row) for row in api_response])
+        api_response = api_response.replace("\\", "").replace("\n", "")
+        return jsonify(api_response)
+    except Exception as e:
+        return jsonify(str(e))
+
+
+
+## requirements.txt
+
+functions-framework==3.*
+Flask
+google-cloud-bigquery
